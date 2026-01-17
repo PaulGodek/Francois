@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gestionnaire de tâches</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Gestionnaire de tâches</h1>
+    <div class="header-actions">
+      <input id="search" placeholder="Recherche libre (titre / description)">
+      <button id="addTaskBtn" class="primary">+ Nouvelle tâche</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <aside class="panel filters">
+      <h3>Filtres</h3>
+      <label>Statut
+        <select id="filterStatut">
+          <option value="">Tous</option>
+          <option>à faire</option>
+          <option>en cours</option>
+          <option>terminée</option>
+          <option>annulée</option>
+        </select>
+      </label>
+
+      <label>Priorité
+        <select id="filterPriorite">
+          <option value="">Toutes</option>
+          <option>basse</option>
+          <option>moyenne</option>
+          <option>haute</option>
+          <option>critique</option>
+        </select>
+      </label>
+
+      <label>Catégorie
+        <input id="filterCategorie" placeholder="ex: perso, travail">
+      </label>
+
+      <label>Étiquette
+        <input id="filterEtiquette" placeholder="ex: urgent">
+      </label>
+
+      <label>Date avant
+        <input type="date" id="filterAvant">
+      </label>
+      <label>Date après
+        <input type="date" id="filterApres">
+      </label>
+
+      <h4>Trier</h4>
+      <select id="sortBy">
+        <option value="dateCreation">Date création</option>
+        <option value="echeance">Date d'échéance</option>
+        <option value="priorite">Priorité</option>
+      </select>
+      <select id="sortOrder">
+        <option value="asc">Asc</option>
+        <option value="desc">Desc</option>
+      </select>
+
+      <button id="clearFilters">Réinitialiser</button>
+    </aside>
+
+    <section class="panel tasks">
+      <ul id="taskList" class="task-list"></ul>
+    </section>
+
+    <aside class="panel detail" id="taskDetail">
+      <p class="empty">Sélectionnez une tâche pour voir les détails</p>
+    </aside>
+  </main>
+
+  <!-- Modal form -->
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-body">
+      <header>
+        <h2 id="modalTitle">Nouvelle tâche</h2>
+        <button id="closeModal">✖</button>
+      </header>
+      <form id="taskForm">
+        <label>Titre<input id="titre" required></label>
+        <label>Description<textarea id="description"></textarea></label>
+        <div class="row">
+          <label>Catégorie<input id="categorie"></label>
+          <label>Étiquettes<input id="etiquettes" placeholder="séparées par ,"></label>
+        </div>
+        <div class="row">
+          <label>Statut<select id="statut">
+            <option>à faire</option>
+            <option>en cours</option>
+            <option>terminée</option>
+            <option>annulée</option>
+          </select></label>
+          <label>Priorité<select id="priorite">
+            <option>basse</option>
+            <option>moyenne</option>
+            <option>haute</option>
+            <option>critique</option>
+          </select></label>
+        </div>
+        <label>Échéance<input type="date" id="echeance"></label>
+
+        <h4>Sous-tâches</h4>
+        <div id="subtasks"></div>
+        <button type="button" id="addSubtask">+ Ajouter sous-tâche</button>
+
+        <h4>Commentaires</h4>
+        <div id="comments"></div>
+        <textarea id="newComment" placeholder="Ajouter un commentaire"></textarea>
+        <button type="button" id="addComment">Ajouter commentaire</button>
+
+        <div class="form-actions">
+          <button type="submit" class="primary">Enregistrer</button>
+          <button type="button" id="deleteTask" class="danger">Supprimer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/public/script.js"></script>
+</body>
+</html>

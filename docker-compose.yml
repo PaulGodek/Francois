@@ -1,0 +1,33 @@
+services:
+  francois_node:
+    build: .
+    ports:
+      - "9000:9000"
+    environment:
+      - CONN_STR=mongodb://user:pass@francois_db:27017
+    restart: always
+    depends_on:
+      - francois_db
+    networks:
+      - francois_network
+
+  francois_db:
+    image: mongodb/mongodb-community-server:8.0-ubi8
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    volumes:
+      - mongodb:/data/db
+    networks:
+      - francois_network
+    command: mongod
+
+volumes:
+  mongodb:
+
+networks:
+  francois_network:
+    driver: bridge

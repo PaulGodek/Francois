@@ -1,0 +1,21 @@
+{
+    "name": "francois",
+    "version": "1.0.0",
+    "description": "Application de gestion de tâches pour un projet",
+    "main": "src/app.js",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/PaulGodek/Francois"
+    },
+    "scripts": {
+        "start": "node src/app.js"
+    },
+    "dependencies": {
+        "express": "^5.1.0",
+        "mongoose": "^9.0.0", 
+        "dotenv": "^17.2.3"
+    },
+    "author": "Paul GODEK et Luca FILIOL",
+    "license": "yenapa"
+}
