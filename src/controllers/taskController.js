@@ -60,7 +60,7 @@ export const getTasks = async (req, res) => {
   }
 
   try {
-    let tasks = await Task.aggregate({$match: match, $sort: sort});
+    let tasks = await Task.aggregate([{$match: match, $sort: sort}]);
     res.status(200).json(tasks);
   } catch (err) {
     res.status(400).json({ error: err.message });

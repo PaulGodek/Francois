@@ -12,7 +12,6 @@ const taskSchema = new mongoose.Schema({
   etiquettes: [String],
   sousTaches: [{ titre: String, statut: String, echeance: Date }],
   commentaires: [{ date: { type: Date, default: Date.now }, contenu: String }],
-  historique: [{ champModifie: String, ancienneValeur: String, nouvelleValeur: String, date: { type: Date, default: Date.now } }]
 });
 
 export default mongoose.model('Tasks', taskSchema);

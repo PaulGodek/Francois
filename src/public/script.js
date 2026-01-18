@@ -35,7 +35,7 @@ const clearFilters = document.getElementById('clearFilters');
 let tasks = [];
 let editingId = null;
 
-async function loadTasks(){
+async function loadTasksAPI(){
   try {
     const response = await fetch('/api/tasks');
     if (!response.ok) throw new Error('Erreur lors du chargement des tâches');
@@ -43,19 +43,6 @@ async function loadTasks(){
   } catch (error) {
     console.error('Erreur:', error);
     tasks = [];
-  }
-}
-
-async function saveTasks(){ 
-  try {
-    const response = await fetch('/api/tasks', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tasks)
-    });
-    if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
-  } catch (error) {
-    console.error('Erreur:', error);
   }
 }
 
@@ -138,7 +125,7 @@ function renderTasks(){
       if(confirm('Supprimer cette tâche ?')){ 
         try {
           await deleteTaskAPI(t.id);
-          await loadTasks();
+          await loadTasksAPI();
           renderTasks(); 
           renderDetail(); 
         } catch (error) {
@@ -237,7 +224,7 @@ taskForm.onsubmit = async function(e){
     }else{
       await createTaskAPI(data);
     }
-    await loadTasks();
+    await loadTasksAPI();
     renderTasks(); 
     closeModal();
   } catch (error) {
@@ -250,7 +237,7 @@ deleteTaskBtn.onclick = async ()=>{
   if(!confirm('Supprimer définitivement ?')) return; 
   try {
     await deleteTaskAPI(editingId);
-    await loadTasks();
+    await loadTasksAPI();
     renderTasks(); 
     closeModal(); 
     renderDetail();
@@ -267,7 +254,7 @@ function escapeHtml(s){ if(!s) return ''; return s.replaceAll('&','&amp;').repla
 function escapeAttr(s){ return (s||'').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
 
 (async () => {
-  await loadTasks();
+  await loadTasksAPI();
   renderTasks();
   renderDetail();
 })();
