@@ -122,8 +122,9 @@ function renderTasks(){
       <div>
         <h3>${escapeHtml(t.titre)}</h3>
         <div class="task-meta">${escapeHtml(t.categorie||'')} • ${escapeHtml(t.statut)} • <strong>${escapeHtml(t.priorite)}</strong></div>
-        <div class="task-meta">Échéance: ${t.echeance ? formatDate(t.echeance) : '—'}</div>
         ${etiquettesHTML ? `<div style="margin-top: 8px;">${etiquettesHTML}</div>` : ''}
+        <div class="task-meta">Échéance: ${t.echeance ? formatDate(t.echeance) : '—'}</div>
+        
       </div>
       <div class="task-actions">
         <button class="open">🔍</button>
