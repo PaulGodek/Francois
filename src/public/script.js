@@ -42,6 +42,16 @@ let orderAscendant = true;
 // filtres de la forme { statut = "à faire", priorite = "basse" }
 let filtres = {};
 
+// Fonction pour formater les dates au format JJ/MM/AAAA
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function getId(obj){
   if(!obj) return null;
   if(obj._id) return String(obj._id);
@@ -112,7 +122,7 @@ function renderTasks(){
       <div>
         <h3>${escapeHtml(t.titre)}</h3>
         <div class="task-meta">${escapeHtml(t.categorie||'')} • ${escapeHtml(t.statut)} • <strong>${escapeHtml(t.priorite)}</strong></div>
-        <div class="task-meta">Échéance: ${escapeHtml(t.echeance||'—')}</div>
+        <div class="task-meta">Échéance: ${t.echeance ? formatDate(t.echeance) : '—'}</div>
         ${etiquettesHTML ? `<div style="margin-top: 8px;">${etiquettesHTML}</div>` : ''}
       </div>
       <div class="task-actions">
@@ -168,9 +178,9 @@ function renderDetail(id){
   `;
   taskDetail.appendChild(h);
   const ul = document.createElement('ul'); ul.style.paddingLeft='18px';
-  (t.sousTaches||[]).forEach(st=>{ const li=document.createElement('li'); li.textContent = `${st.titre} — ${st.statut} ${st.echeance? ' • '+st.echeance : ''}`; ul.appendChild(li); });
+  (t.sousTaches||[]).forEach(st=>{ const li=document.createElement('li'); li.textContent = `${st.titre} — ${st.statut} ${st.echeance? ' • '+formatDate(st.echeance) : ''}`; ul.appendChild(li); });
   taskDetail.appendChild(ul);
-  const c = document.createElement('div'); c.innerHTML='<h4>Commentaires</h4>'; (t.commentaires||[]).forEach(cm=>{ const p=document.createElement('p'); p.innerHTML=`<strong>${escapeHtml(cm.auteur||'Anonyme')}</strong> <small style="color:var(--muted)">(${cm.date})</small><br>${escapeHtml(cm.contenu)}`; c.appendChild(p); });
+  const c = document.createElement('div'); c.innerHTML='<h4>Commentaires</h4>'; (t.commentaires||[]).forEach(cm=>{ const p=document.createElement('p'); p.innerHTML=`<strong>${escapeHtml(cm.auteur||'Anonyme')}</strong> <small style="color:var(--muted)">(${formatDate(cm.date)})</small><br>${escapeHtml(cm.contenu)}`; c.appendChild(p); });
   taskDetail.appendChild(c);
 }
 
@@ -209,7 +219,7 @@ function appendSubtask(st={titre:'',statut:'à faire',echeance:''}){
 }
 
 function appendCommentUI(cm){
-  const d = document.createElement('div'); d.className='comment'; d.innerHTML = `<strong>${escapeHtml(cm.auteur||'Anonyme')}</strong> <small style="color:var(--muted)">(${cm.date})</small><p>${escapeHtml(cm.contenu)}</p>`; commentsDiv.appendChild(d);
+  const d = document.createElement('div'); d.className='comment'; d.innerHTML = `<strong>${escapeHtml(cm.auteur||'Anonyme')}</strong> <small style="color:var(--muted)">(${formatDate(cm.date)})</small><p>${escapeHtml(cm.contenu)}</p>`; commentsDiv.appendChild(d);
 }
 
 addBtn.onclick = ()=> openModal();
@@ -217,8 +227,8 @@ closeModalBtn.onclick = ()=> closeModal();
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 addSubtaskBtn.onclick = ()=> appendSubtask();
 addCommentBtn.onclick = ()=>{
-  const text = newCommentInput.value.trim(); if(!text) return; appendCommentUI({auteur:'Vous',date:new Date().toLocaleString(),contenu:text}); newCommentInput.value='';
-}
+  const text = newCommentInput.value.trim(); if(!text) return; appendCommentUI({auteur:'Vous',date:new Date().toISOString(),contenu:text}); newCommentInput.value='';}
+
 
 taskForm.onsubmit = async function(e){
   e.preventDefault();
