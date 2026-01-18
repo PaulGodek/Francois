@@ -1,5 +1,0 @@
-body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:transparent}
-.popup{max-width:800px;margin:24px auto;padding:18px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(2,48,60,.06)}
-.popup h2{color:var(--accent, #007c91)}
-.popup p{color:#334;line-height:1.4}
-.popup ul{margin:8px 0 0 18px}

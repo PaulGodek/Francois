@@ -42,14 +42,31 @@ let orderAscendant = true;
 // filtres de la forme { statut = "à faire", priorite = "basse" }
 let filtres = {};
 
-// Fonction pour formater les dates au format JJ/MM/AAAA
-function formatDate(dateString) {
+// Formater les dates classiques au format DD/MM/YYYY pour l'affichage
+function formatDateForRendering(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+// Formater les dates classiques au format yyyy-MM-dd
+function formatDateFromRenderingToUseful(dateString) {
+  if (!dateString) return '';
+  const dateSplitted = dateString.split("/");
+  return new Date(dateSplitted[2], dateSplitted[1] - 1, dateSplitted[0])
+}
+
+// Formater les dates classiques au format yyyy-MM-dd
+function formatDateForAttribute(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${year}-${month}-${day}`;
 }
 
 function getId(obj){
@@ -123,7 +140,7 @@ function renderTasks(){
         <h3>${escapeHtml(t.titre)}</h3>
         <div class="task-meta">${escapeHtml(t.categorie||'')} • ${escapeHtml(t.statut)} • <strong>${escapeHtml(t.priorite)}</strong></div>
         ${etiquettesHTML ? `<div style="margin-top: 8px;">${etiquettesHTML}</div>` : ''}
-        <div class="task-meta">Échéance: ${t.echeance ? formatDate(t.echeance) : '—'}</div>
+        <div class="task-meta">Échéance : ${t.echeance ? escapeHtml(formatDateForRendering(t.echeance)) : '—'}</div>
         
       </div>
       <div class="task-actions">
@@ -172,16 +189,27 @@ function renderDetail(id){
   const etiquettesHTML = (t.etiquettes||[]).map(e => `<span class="badge">${escapeHtml(e)}</span>`).join('');
   h.innerHTML = `
     <h2>${escapeHtml(t.titre)}</h2>
-    <div class="task-meta">${escapeHtml(t.categorie||'')} • ${escapeHtml(t.statut)} • Priorité: ${escapeHtml(t.priorite)}</div>
+    <h4>Date de création : ${escapeHtml(formatDateForRendering(t.dateCreation))}</h4>
+    <div class="task-meta">${escapeHtml(t.categorie||'')} • ${escapeHtml(t.statut)} • Priorité : ${escapeHtml(t.priorite)}</div>
     ${etiquettesHTML ? `<div style="margin-top: 8px; margin-bottom: 12px;">${etiquettesHTML}</div>` : ''}
     <p>${escapeHtml(t.description||'')}</p>
     <h4>Sous-tâches</h4>
   `;
   taskDetail.appendChild(h);
   const ul = document.createElement('ul'); ul.style.paddingLeft='18px';
-  (t.sousTaches||[]).forEach(st=>{ const li=document.createElement('li'); li.textContent = `${st.titre} — ${st.statut} ${st.echeance? ' • '+formatDate(st.echeance) : ''}`; ul.appendChild(li); });
+  (t.sousTaches||[]).forEach(st=>{ 
+    const li=document.createElement('li'); 
+    li.textContent = `${st.titre} — ${st.statut} ${st.echeance? ' • '+escapeHtml(formatDateForRendering(st.echeance)) : ''}`; 
+    ul.appendChild(li); 
+  });
   taskDetail.appendChild(ul);
-  const c = document.createElement('div'); c.innerHTML='<h4>Commentaires</h4>'; (t.commentaires||[]).forEach(cm=>{ const p=document.createElement('p'); p.innerHTML=`<strong>${escapeHtml(cm.auteur||'Anonyme')}</strong> <small style="color:var(--muted)">(${formatDate(cm.date)})</small><br>${escapeHtml(cm.contenu)}`; c.appendChild(p); });
+  const c = document.createElement('div'); 
+  c.innerHTML='<h4>Commentaires</h4>'; 
+  (t.commentaires||[]).forEach(cm=>{ 
+    const p=document.createElement('p'); 
+    p.innerHTML=`<strong>${escapeHtml(formatDateForRendering(cm.date))}</strong><br>${escapeHtml(cm.contenu)}`; 
+    c.appendChild(p); 
+  });
   taskDetail.appendChild(c);
 }
 
@@ -200,7 +228,7 @@ function openModal(id=null){
     document.getElementById('etiquettes').value = (t.etiquettes||[]).join(',');
     document.getElementById('statut').value = t.statut||'à faire';
     document.getElementById('priorite').value = t.priorite||'moyenne';
-    document.getElementById('echeance').value = t.echeance||'';
+    document.getElementById('echeance').value = formatDateForAttribute(t.echeance)||'';
     (t.sousTaches||[]).forEach(st=> appendSubtask(st));
     (t.commentaires||[]).forEach(cm=> appendCommentUI(cm));
     deleteTaskBtn.style.display='inline-block';
@@ -212,15 +240,19 @@ function openModal(id=null){
 function closeModal(){ editingId=null; modal.setAttribute('aria-hidden','true'); modal.style.display='none'; }
 
 function appendSubtask(st={titre:'',statut:'à faire',echeance:''}){
-  const div = document.createElement('div'); div.className='subtask row';
-  div.innerHTML = `<input placeholder="Titre" value="${escapeAttr(st.titre)}"><select><option>à faire</option><option>en cours</option><option>terminée</option><option>annulée</option></select><input type="date" value="${escapeAttr(st.echeance)}"><button type="button" class="removeSub">✖</button>`;
+  const div = document.createElement('div'); 
+  div.className='subtask row';
+  div.innerHTML = `<input placeholder="Titre" value="${escapeAttr(st.titre)}" required><span style="color:red;">*</span><select><option>à faire</option><option>en cours</option><option>terminée</option><option>annulée</option></select><input type="date" value="${escapeAttr(formatDateForAttribute(st.echeance))}"><button type="button" class="removeSub">✖</button>`;
   div.querySelector('select').value = st.statut||'à faire';
   div.querySelector('.removeSub').onclick = ()=>div.remove();
   subtasksDiv.appendChild(div);
 }
 
 function appendCommentUI(cm){
-  const d = document.createElement('div'); d.className='comment'; d.innerHTML = `<strong>${escapeHtml(cm.auteur||'Anonyme')}</strong> <small style="color:var(--muted)">(${formatDate(cm.date)})</small><p>${escapeHtml(cm.contenu)}</p>`; commentsDiv.appendChild(d);
+  const d = document.createElement('div'); 
+  d.className='comment'; 
+  d.innerHTML = `<strong>${escapeHtml(formatDateForRendering(cm.date))}</strong><p>${escapeHtml(cm.contenu)}</p>`; 
+  commentsDiv.appendChild(d);
 }
 
 addBtn.onclick = ()=> openModal();
@@ -228,7 +260,11 @@ closeModalBtn.onclick = ()=> closeModal();
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 addSubtaskBtn.onclick = ()=> appendSubtask();
 addCommentBtn.onclick = ()=>{
-  const text = newCommentInput.value.trim(); if(!text) return; appendCommentUI({auteur:'Vous',date:new Date().toISOString(),contenu:text}); newCommentInput.value='';}
+  const text = newCommentInput.value.trim(); 
+  if(!text) return; 
+  appendCommentUI({auteur:'Vous',date:new Date().toISOString(),contenu:text}); 
+  newCommentInput.value='';
+}
 
 
 taskForm.onsubmit = async function(e){
@@ -246,7 +282,10 @@ taskForm.onsubmit = async function(e){
       statut: div.querySelector('select').value,
       echeance: div.querySelector('input[type=date]').value
     })),
-    commentaires: Array.from(commentsDiv.querySelectorAll('.comment')).map(c=>({ auteur:'', date:'', contenu:c.querySelector('p')?c.querySelector('p').textContent:'' }))
+    commentaires: Array.from(commentsDiv.querySelectorAll('.comment')).map(c=>({
+      date:formatDateFromRenderingToUseful(c.querySelector('strong').textContent), 
+      contenu:c.querySelector('p')?c.querySelector('p').textContent:'' 
+    }))
   };
   try {
     let savedId = null;

@@ -10,7 +10,7 @@ const taskSchema = new mongoose.Schema({
   priorite: String,
   categorie: String,
   etiquettes: [String],
-  sousTaches: [{ titre: String, statut: String, echeance: Date }],
+  sousTaches: [{ titre: { type: String, required: true }, statut: String, echeance: Date }],
   commentaires: [{ date: { type: Date, default: Date.now }, contenu: String }],
 });
 
