@@ -15,6 +15,4 @@ const taskSchema = new mongoose.Schema({
   historique: [{ champModifie: String, ancienneValeur: String, nouvelleValeur: String, date: { type: Date, default: Date.now } }]
 });
 
-
-
 export default mongoose.model('Tasks', taskSchema);

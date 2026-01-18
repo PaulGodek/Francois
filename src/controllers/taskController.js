@@ -2,42 +2,66 @@ import Task from '../models/Task.js';
 
 // ---------------- CRUD Operations ----------------
 
-export const getAllTasks = async (req, res) => {
+export const getTasks = async (req, res) => {
   const { query } = req.query;
-  try {
-    if (query.statut !== undefined) {
-      const filteredTasks = await Task.find({ statut: query.statut });
-      return res.status(200).json(filteredTasks);
-    } else if (query.priorite !== undefined) {
-      const filteredTasks = await Task.find({ priorite: query.priorite });
-      return res.status(200).json(filteredTasks);
-    } else if (query.categorie !== undefined) {
-      const filteredTasks = await Task.find({ categorie: query.categorie });
-      return res.status(200).json(filteredTasks);
-    } else if (query.etiquette !== undefined) {
-      const filteredTasks = await Task.find({ etiquettes: query.etiquette });
-      return res.status(200).json(filteredTasks);
-    } else if (query.avant !== undefined) {
-      const date = new Date(query.avant);
-      const filteredTasks = await Task.find({ echeance: { $lt: date } });
-      return res.status(200).json(filteredTasks);
-    } else if (query.apres !== undefined) {
-      const date = new Date(query.apres);
-      const filteredTasks = await Task.find({ echeance: { $gt: date } });
-      return res.status(200).json(filteredTasks);
-    } else if (query.q !== undefined) {
-      const searchTerm = query.q;
-      const filteredTasks = await Task.find({
-        $or: [
-          { titre: { $regex: searchTerm, $options: 'i' } },
-          { description: { $regex: searchTerm, $options: 'i' } }
-        ]
-      });
-      return res.status(200).json(filteredTasks);
-    } else {
-      const tasks = await Task.find();
-      res.status(200).json(tasks);
+  
+  let match;
+
+  if (typeof query.statut !== undefined) {
+    match = { statut: query.statut };
+  } 
+  else if (typeof query.priorite !== undefined) {
+    match = { priorite: query.priorite };
+  } 
+  else if (typeof query.categorie !== undefined) {
+    match = { categorie: query.categorie };
+  } 
+  else if (typeof query.etiquette !== undefined) {
+    match = { etiquettes: query.etiquette };
+  } 
+  else if (typeof query.avant !== undefined) {
+    const date = new Date(query.avant);
+    match = { echeance: { $lt: date } };
+  } 
+  else if (typeof query.apres !== undefined) {
+    const date = new Date(query.apres);
+    match = { echeance: { $gt: date } };
+  } 
+  else if (typeof query.q !== undefined) {
+    const searchTerm = query.q;
+    match = {
+      $or: [
+        { titre: { $regex: `/${searchTerm}/`, $options: 'i' } },
+        { description: { $regex: `/${searchTerm}/`, $options: 'i' } }
+      ]
+    };
+  } else {
+    match = {};
+  }
+
+  let sort;
+
+  if (typeof query.tri !== undefined) {
+    let order = query.order === 'desc' ? -1 : 1;
+    switch (query.tri) {
+      case 'echeance':
+        sort = { $sort: { echeance: order } };
+        break;
+      case 'priorite':
+        sort = { $sort: { priorite: order } };
+        break;
+      case 'dateCreation':
+        sort = { $sort: { dateCreation: order } };
+        break;
+      default:
+        sort = {};
+        break;
     }
+  }
+
+  try {
+    let tasks = await Task.aggregate({$match: match, $sort: sort});
+    res.status(200).json(tasks);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
