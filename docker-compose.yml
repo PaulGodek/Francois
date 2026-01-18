@@ -1,8 +1,11 @@
+name: francois
+  
 services:
   francois_node:
+    container_name: francois_node
     build: .
     ports:
-      - "9000:9000"
+      - 9000:9000
     environment:
       - CONN_STR=mongodb://user:pass@francois_db:27017
     restart: always
@@ -12,10 +15,11 @@ services:
       - francois_network
 
   francois_db:
+    container_name: francois_db
     image: mongodb/mongodb-community-server:8.0-ubi8
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - 27017:27017
     environment:
       - MONGO_INITDB_ROOT_USERNAME=user
       - MONGO_INITDB_ROOT_PASSWORD=pass
