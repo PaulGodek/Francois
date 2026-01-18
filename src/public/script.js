@@ -35,16 +35,55 @@ const clearFilters = document.getElementById('clearFilters');
 let tasks = [];
 let editingId = null;
 
-function loadTasks(){
-  try{ tasks = JSON.parse(localStorage.getItem('tasks')||'null') || sampleTasks(); }catch(e){ tasks = sampleTasks(); }
+async function loadTasks(){
+  try {
+    const response = await fetch('/api/tasks');
+    if (!response.ok) throw new Error('Erreur lors du chargement des tâches');
+    tasks = await response.json();
+  } catch (error) {
+    console.error('Erreur:', error);
+    tasks = [];
+  }
 }
-function saveTasks(){ localStorage.setItem('tasks', JSON.stringify(tasks)); }
 
-function sampleTasks(){
-  return [
-    { id: Date.now()-10000, titre:'Faire TP MongoDB', description:'CRUD sur collection tasks', dateCreation:new Date().toISOString(), echeance:'2025-03-31', statut:'en cours', priorite:'haute', categorie:'cours', etiquettes:['mongo','tp'], sousTaches:[], commentaires:[] },
-    { id: Date.now()-5000, titre:'Rédiger rapport', description:'Rapport final du projet', dateCreation:new Date().toISOString(), echeance:'2025-04-05', statut:'à faire', priorite:'moyenne', categorie:'projet', etiquettes:['rapport'], sousTaches:[], commentaires:[] }
-  ];
+async function saveTasks(){ 
+  try {
+    const response = await fetch('/api/tasks', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tasks)
+    });
+    if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
+  } catch (error) {
+    console.error('Erreur:', error);
+  }
+}
+
+async function createTaskAPI(data) {
+  const response = await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error('Erreur lors de la création');
+  return await response.json();
+}
+
+async function updateTaskAPI(id, data) {
+  const response = await fetch(`/api/tasks/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+  return await response.json();
+}
+
+async function deleteTaskAPI(id) {
+  const response = await fetch(`/api/tasks/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Erreur lors de la suppression');
 }
 
 function comparePriority(a,b){ const map={basse:1,moyenne:2,haute:3,critique:4}; return (map[a]||0)-(map[b]||0); }
@@ -93,16 +132,27 @@ function renderTasks(){
         <button class="delete">✖</button>
       </div>
     `;
-    li.querySelector('.open').onclick = ()=> renderDetail(t.id);
-    li.querySelector('.edit').onclick = ()=> openModal(t.id);
-    li.querySelector('.delete').onclick = ()=> { if(confirm('Supprimer cette tâche ?')){ tasks = tasks.filter(x=>x.id!==t.id); saveTasks(); renderTasks(); renderDetail(); } };
+    li.querySelector('.open').onclick = ()=> renderDetail(t._id);
+    li.querySelector('.edit').onclick = ()=> openModal(t._id);
+    li.querySelector('.delete').onclick = async ()=> { 
+      if(confirm('Supprimer cette tâche ?')){ 
+        try {
+          await deleteTaskAPI(t.id);
+          await loadTasks();
+          renderTasks(); 
+          renderDetail(); 
+        } catch (error) {
+          alert('Erreur lors de la suppression: ' + error.message);
+        }
+      }
+    };
     taskList.appendChild(li);
   });
 }
 
 function renderDetail(id){
   if(!id){ taskDetail.innerHTML='<p class="empty">Sélectionnez une tâche pour voir les détails</p>'; return; }
-  const t = tasks.find(x=>x.id===id); if(!t) return;
+  const t = tasks.find(x=>x._id===id); if(!t) return;
   taskDetail.innerHTML = '';
   const h = document.createElement('div');
   h.innerHTML = `
@@ -126,7 +176,7 @@ function openModal(id=null){
   subtasksDiv.innerHTML=''; commentsDiv.innerHTML=''; newCommentInput.value='';
   if(id){
     modalTitle.textContent='Modifier la tâche';
-    const t = tasks.find(x=>x.id===id);
+    const t = tasks.find(x=>x._id===id);
     document.getElementById('titre').value = t.titre||'';
     document.getElementById('description').value = t.description||'';
     document.getElementById('categorie').value = t.categorie||'';
@@ -164,7 +214,7 @@ addCommentBtn.onclick = ()=>{
   const text = newCommentInput.value.trim(); if(!text) return; appendCommentUI({auteur:'Vous',date:new Date().toLocaleString(),contenu:text}); newCommentInput.value='';
 }
 
-taskForm.onsubmit = function(e){
+taskForm.onsubmit = async function(e){
   e.preventDefault();
   const data = {
     titre: document.getElementById('titre').value.trim(),
@@ -181,17 +231,32 @@ taskForm.onsubmit = function(e){
     })),
     commentaires: Array.from(commentsDiv.querySelectorAll('.comment')).map(c=>({ auteur:'', date:'', contenu:c.querySelector('p')?c.querySelector('p').textContent:'' }))
   };
-  if(editingId){
-    const idx = tasks.findIndex(t=>t.id===editingId); if(idx>-1){ tasks[idx] = {...tasks[idx], ...data}; }
-  }else{
-    data.id = Date.now(); data.dateCreation = new Date().toISOString(); data.commentaires = [];
-    tasks.push(data);
+  try {
+    if(editingId){
+      await updateTaskAPI(editingId, data);
+    }else{
+      await createTaskAPI(data);
+    }
+    await loadTasks();
+    renderTasks(); 
+    closeModal();
+  } catch (error) {
+    alert('Erreur: ' + error.message);
   }
-  saveTasks(); renderTasks(); closeModal();
 }
 
-deleteTaskBtn.onclick = ()=>{
-  if(!editingId) return; if(!confirm('Supprimer définitivement ?')) return; tasks = tasks.filter(t=>t.id!==editingId); saveTasks(); renderTasks(); closeModal(); renderDetail();
+deleteTaskBtn.onclick = async ()=>{
+  if(!editingId) return; 
+  if(!confirm('Supprimer définitivement ?')) return; 
+  try {
+    await deleteTaskAPI(editingId);
+    await loadTasks();
+    renderTasks(); 
+    closeModal(); 
+    renderDetail();
+  } catch (error) {
+    alert('Erreur lors de la suppression: ' + error.message);
+  }
 }
 
 // Filters events
@@ -201,4 +266,8 @@ clearFilters.onclick = ()=>{ filterStatut.value=''; filterPriorite.value=''; fil
 function escapeHtml(s){ if(!s) return ''; return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 function escapeAttr(s){ return (s||'').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
 
-loadTasks(); renderTasks(); renderDetail();
+(async () => {
+  await loadTasks();
+  renderTasks();
+  renderDetail();
+})();

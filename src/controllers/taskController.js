@@ -78,9 +78,19 @@ export const getTaskById = async (req, res) => {
 }
 
 export const createTask = async (req, res) => {
-  const { titre, description, statut, priorite, echeance } = req.body;
+  const { titre, description, statut, priorite, echeance, categorie, etiquettes, sousTaches, commentaires } = req.body;
   try {
-    const newTask = await Task.create({ titre, description, statut, priorite, echeance });
+    const newTask = await Task.create({ 
+      titre, 
+      description, 
+      statut, 
+      priorite, 
+      echeance, 
+      categorie, 
+      etiquettes, 
+      sousTaches, 
+      commentaires 
+    });
     res.status(201).json(newTask);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -89,9 +99,13 @@ export const createTask = async (req, res) => {
 
 export const updateTask = async (req, res) => {
   const { id } = req.params;
-  const { titre, description, statut, priorite, echeance } = req.body;
+  const { titre, description, statut, priorite, echeance, categorie, etiquettes, sousTaches, commentaires } = req.body;
   try {
-    const updatedTask = await Task.findByIdAndUpdate(id, { titre, description, statut, priorite, echeance }, { new: true });
+    const updatedTask = await Task.findByIdAndUpdate(
+      id, 
+      { titre, description, statut, priorite, echeance, categorie, etiquettes, sousTaches, commentaires }, 
+      { new: true }
+    );
     res.status(200).json(updatedTask);
   } catch (err) {
     res.status(400).json({ error: err.message });
