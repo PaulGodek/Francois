@@ -69,7 +69,7 @@ async function loadTasksAPI(){
       mediaQuery += `${nomTri}=${valeurTri}&order=${orderAscendant?"asc":"desc"}&`;
     }
 
-    for (const [key, value] of Object.entries(object)) {
+    for (const [key, value] of Object.entries(filtres)) {
       mediaQuery += `${key}=${value}&`;
     }
 

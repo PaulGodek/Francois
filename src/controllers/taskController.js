@@ -19,11 +19,11 @@ export const getTasks = async (req, res) => {
   } 
 
   if (typeof categorie !== "undefined") {
-    match.$match.categorie = categorie;
+    match.$match.categorie = { $regex: categorie, $options: 'i' };
   } 
 
   if (typeof etiquettes !== "undefined") {
-    match.$match.etiquettes = etiquettes;
+    match.$match.etiquettes = { $regex: etiquettes, $options: 'i' };
   } 
 
   if (typeof avant !== "undefined") {
@@ -45,7 +45,7 @@ export const getTasks = async (req, res) => {
   }
 
   // if there are any matchs for filtering
-  if (match.$match != {}) {
+  if (Object.keys(match.$match).length > 0) {
     pipeline.push(match);
   }
 
@@ -57,7 +57,22 @@ export const getTasks = async (req, res) => {
         pipeline.push({ $sort: { echeance: finalOrder }});
         break;
       case 'priorite':
-        pipeline.push({ $sort: { priorite: finalOrder } });
+        pipeline.push({
+          $addFields: {
+            prioriteOrder: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ["$priorite", "basse"] }, then: 1 },
+                  { case: { $eq: ["$priorite", "moyenne"] }, then: 2 },
+                  { case: { $eq: ["$priorite", "importante"] }, then: 3 },
+                  { case: { $eq: ["$priorite", "critique"] }, then: 4 }
+                ],
+                default: 0 // Default to 0 if no match
+              }
+            }
+          }
+        });
+        pipeline.push({ $sort: { prioriteOrder: finalOrder }});
         break;
       case 'dateCreation':
         pipeline.push({ $sort: { dateCreation: finalOrder } });
@@ -68,10 +83,14 @@ export const getTasks = async (req, res) => {
   }
 
   try {
-    let tasks = await Task.aggregate(pipeline);
+    let tasks;
+    if (pipeline.length <= 0)
+      tasks = await Task.find();
+    else 
+      tasks = await Task.aggregate(pipeline);
     res.status(200).json(tasks);
   } catch (err) {
-    res.status(400).json({ error: info + "      " + err.message });
+    res.status(400).json({ error: err.message });
   }
 }
 
@@ -128,36 +147,4 @@ export const deleteTask = async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-}
-
-
-
-
-
-
-function comparePriority(a,b){ const map={basse:1,moyenne:2,haute:3,critique:4}; return (map[a]||0)-(map[b]||0); }
-
-function applyFilters(list){
-  const q = (searchInput.value||'').toLowerCase();
-  return list.filter(t=>{
-    if(filterStatut.value && t.statut!==filterStatut.value) return false;
-    if(filterPriorite.value && t.priorite!==filterPriorite.value) return false;
-    if(filterCategorie.value && !t.categorie?.toLowerCase().includes(filterCategorie.value.toLowerCase())) return false;
-    if(filterEtiquette.value && !(t.etiquettes||[]).some(e=>e.toLowerCase().includes(filterEtiquette.value.toLowerCase()))) return false;
-    if(filterAvant.value && t.echeance && t.echeance>filterAvant.value) return false;
-    if(filterApres.value && t.echeance && t.echeance<filterApres.value) return false;
-    if(q){ if(!(t.titre?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q))) return false; }
-    return true;
-  });
-}
-
-function applySort(list){
-  const s = sortBy.value; const ord = sortOrder.value;
-  return list.slice().sort((a,b)=>{
-    let r=0;
-    if(s==='echeance') r = (a.echeance||'').localeCompare(b.echeance||'');
-    else if(s==='priorite') r = comparePriority(a.priorite,b.priorite);
-    else r = (a.dateCreation||'').localeCompare(b.dateCreation||'');
-    return ord==='asc'? r : -r;
-  });
 }
