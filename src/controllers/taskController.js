@@ -3,7 +3,7 @@ import Task from '../models/Task.js';
 // ---------------- CRUD Operations ----------------
 
 export const getTasks = async (req, res) => {
-  const { statut, priorite, categorie, etiquette, avant, apres, q, tri, order } = req.query;
+  const { statut, priorite, categorie, etiquettes, avant, apres, q, tri, order } = req.query;
   
   let pipeline = [];
 
@@ -22,8 +22,8 @@ export const getTasks = async (req, res) => {
     match.$match.categorie = categorie;
   } 
 
-  if (typeof etiquette !== "undefined") {
-    match.$match.etiquettes = etiquette;
+  if (typeof etiquettes !== "undefined") {
+    match.$match.etiquettes = etiquettes;
   } 
 
   if (typeof avant !== "undefined") {
@@ -128,4 +128,36 @@ export const deleteTask = async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+}
+
+
+
+
+
+
+function comparePriority(a,b){ const map={basse:1,moyenne:2,haute:3,critique:4}; return (map[a]||0)-(map[b]||0); }
+
+function applyFilters(list){
+  const q = (searchInput.value||'').toLowerCase();
+  return list.filter(t=>{
+    if(filterStatut.value && t.statut!==filterStatut.value) return false;
+    if(filterPriorite.value && t.priorite!==filterPriorite.value) return false;
+    if(filterCategorie.value && !t.categorie?.toLowerCase().includes(filterCategorie.value.toLowerCase())) return false;
+    if(filterEtiquette.value && !(t.etiquettes||[]).some(e=>e.toLowerCase().includes(filterEtiquette.value.toLowerCase()))) return false;
+    if(filterAvant.value && t.echeance && t.echeance>filterAvant.value) return false;
+    if(filterApres.value && t.echeance && t.echeance<filterApres.value) return false;
+    if(q){ if(!(t.titre?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q))) return false; }
+    return true;
+  });
+}
+
+function applySort(list){
+  const s = sortBy.value; const ord = sortOrder.value;
+  return list.slice().sort((a,b)=>{
+    let r=0;
+    if(s==='echeance') r = (a.echeance||'').localeCompare(b.echeance||'');
+    else if(s==='priorite') r = comparePriority(a.priorite,b.priorite);
+    else r = (a.dateCreation||'').localeCompare(b.dateCreation||'');
+    return ord==='asc'? r : -r;
+  });
 }

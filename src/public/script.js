@@ -36,6 +36,23 @@ let tasks = [];
 let editingId = null;
 let currentDetailId = null;
 
+// Variables de tri
+let nomTri = "";
+let valeurTri = "";
+let orderAscendant = true;
+// filtres de la forme { statut = "à faire", priorite = "basse" }
+let filtres = {};
+
+function changeTri(newNomTri, newValeurTri) {
+  nomTri = newNomTri;
+  valeurTri = newValeurTri
+}
+
+function suppressTri() {
+  nomTri = "";
+  valeurTri = ""
+}
+
 function getId(obj){
   if(!obj) return null;
   if(obj._id) return String(obj._id);
@@ -45,7 +62,22 @@ function getId(obj){
 
 async function loadTasksAPI(){
   try {
-    const response = await fetch('/api/tasks');
+    let url = "/api/tasks";
+    let mediaQuery = "?";
+
+    if (nomTri !== "") {
+      mediaQuery += `${nomTri}=${valeurTri}&order=${orderAscendant?"asc":"desc"}&`;
+    }
+
+    for (const [key, value] of Object.entries(object)) {
+      mediaQuery += `${key}=${value}&`;
+    }
+
+    let urlFinal = url;
+    if (mediaQuery != "?")
+      urlFinal += mediaQuery;
+
+    const response = await fetch(urlFinal);
     if (!response.ok) throw new Error('Erreur lors du chargement des tâches');
     tasks = await response.json();
   } catch (error) {
@@ -81,39 +113,10 @@ async function deleteTaskAPI(id) {
   if (!response.ok) throw new Error('Erreur lors de la suppression');
 }
 
-function comparePriority(a,b){ const map={basse:1,moyenne:2,haute:3,critique:4}; return (map[a]||0)-(map[b]||0); }
-
-function applyFilters(list){
-  const q = (searchInput.value||'').toLowerCase();
-  return list.filter(t=>{
-    if(filterStatut.value && t.statut!==filterStatut.value) return false;
-    if(filterPriorite.value && t.priorite!==filterPriorite.value) return false;
-    if(filterCategorie.value && !t.categorie?.toLowerCase().includes(filterCategorie.value.toLowerCase())) return false;
-    if(filterEtiquette.value && !(t.etiquettes||[]).some(e=>e.toLowerCase().includes(filterEtiquette.value.toLowerCase()))) return false;
-    if(filterAvant.value && t.echeance && t.echeance>filterAvant.value) return false;
-    if(filterApres.value && t.echeance && t.echeance<filterApres.value) return false;
-    if(q){ if(!(t.titre?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q))) return false; }
-    return true;
-  });
-}
-
-function applySort(list){
-  const s = sortBy.value; const ord = sortOrder.value;
-  return list.slice().sort((a,b)=>{
-    let r=0;
-    if(s==='echeance') r = (a.echeance||'').localeCompare(b.echeance||'');
-    else if(s==='priorite') r = comparePriority(a.priorite,b.priorite);
-    else r = (a.dateCreation||'').localeCompare(b.dateCreation||'');
-    return ord==='asc'? r : -r;
-  });
-}
-
 function renderTasks(){
-  let list = applyFilters(tasks);
-  list = applySort(list);
   taskList.innerHTML='';
-  if(list.length===0){ taskList.innerHTML='<p>Aucune tâche</p>'; return; }
-  list.forEach(t=>{
+  if(tasks.length===0){ taskList.innerHTML='<p>Aucune tâche</p>'; return; }
+  tasks.forEach(t=>{
     const li = document.createElement('li'); li.className='task-card';
     li.innerHTML = `
       <div>
@@ -134,8 +137,7 @@ function renderTasks(){
         if(confirm('Supprimer cette tâche ?')){ 
           try {
             await deleteTaskAPI(tid);
-            await loadTasksAPI();
-            renderTasks(); 
+            await loadTasks(); 
             if(currentDetailId && currentDetailId === tid){
               renderDetail();
             } else if(currentDetailId){
@@ -150,6 +152,11 @@ function renderTasks(){
       };
     taskList.appendChild(li);
   });
+}
+
+async function loadTasks() {
+  await loadTasksAPI();
+  renderTasks();
 }
 
 function renderDetail(id){
@@ -246,8 +253,7 @@ taskForm.onsubmit = async function(e){
       const newTask = await createTaskAPI(data);
       savedId = getId(newTask);
     }
-    await loadTasksAPI();
-    renderTasks(); 
+    await loadTasks(); 
     closeModal();
     if(savedId){
       const exists = tasks.find(x=> getId(x)===String(savedId));
@@ -264,8 +270,7 @@ deleteTaskBtn.onclick = async ()=>{
   try {
     const deletedId = String(editingId);
     await deleteTaskAPI(deletedId);
-    await loadTasksAPI();
-    renderTasks(); 
+    await loadTasks();
     closeModal(); 
       if(currentDetailId && currentDetailId === deletedId){
         renderDetail();
@@ -279,15 +284,60 @@ deleteTaskBtn.onclick = async ()=>{
   }
 }
 
-// Filters events
-[searchInput,filterStatut,filterPriorite,filterCategorie,filterEtiquette,filterAvant,filterApres,sortBy,sortOrder].forEach(el=>el.addEventListener('input', renderTasks));
-clearFilters.onclick = ()=>{ filterStatut.value=''; filterPriorite.value=''; filterCategorie.value=''; filterEtiquette.value=''; filterAvant.value=''; filterApres.value=''; sortBy.value='dateCreation'; sortOrder.value='asc'; searchInput.value=''; renderTasks(); };
+// Update filtering and ordering variables on input events
+[searchInput, filterStatut, filterPriorite, filterCategorie, filterEtiquette, filterAvant, filterApres, sortBy, sortOrder].forEach(el => {
+  el.addEventListener('input', () => {
+    // Update sorting variables
+    nomTri = sortBy.value || '';
+    valeurTri = sortBy.value ? sortBy.options[sortBy.selectedIndex].text : '';
+    orderAscendant = sortOrder.value === 'asc';
+
+    // Update filters object
+    filtres = {
+      statut: filterStatut.value || undefined,
+      priorite: filterPriorite.value || undefined,
+      categorie: filterCategorie.value || undefined,
+      etiquettes: filterEtiquette.value || undefined,
+      avant: filterAvant.value || undefined,
+      apres: filterApres.value || undefined,
+      q: searchInput.value || undefined
+    };
+
+    // Remove undefined values from filters
+    Object.keys(filtres).forEach(key => {
+      if (filtres[key] === undefined) {
+        delete filtres[key];
+      }
+    });
+
+    // Reload tasks with updated variables
+    loadTasks();
+  });
+});
+
+clearFilters.onclick = ()=>{ 
+  filterStatut.value=''; 
+  filterPriorite.value=''; 
+  filterCategorie.value=''; 
+  filterEtiquette.value=''; 
+  filterAvant.value=''; 
+  filterApres.value=''; 
+  sortBy.value='dateCreation'; 
+  sortOrder.value='asc'; 
+  searchInput.value=''; 
+
+  nomTri = "";
+  valeurTri = "";
+  orderAscendant = true;
+  filtres = {};
+
+  loadTasks();
+};
 
 function escapeHtml(s){ if(!s) return ''; return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 function escapeAttr(s){ return (s||'').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
 
 (async () => {
-  await loadTasksAPI();
-  renderTasks();
+  await loadTasks();
   renderDetail();
 })();
