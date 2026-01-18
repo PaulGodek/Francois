@@ -35,7 +35,7 @@ Ce projet est une application de gestion de tâches permettant de créer, lire, 
 ### Lancer en local
 1. Clonez le dépôt du projet :
    ```bash
-   git clone https://github.com/PaulGodek/Francois
+   git clone https://github.com/PaulGodek/Francois.git
    ```
 2. Installez les dépendances :
    ```bash
