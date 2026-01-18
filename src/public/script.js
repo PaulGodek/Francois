@@ -34,6 +34,14 @@ const clearFilters = document.getElementById('clearFilters');
 
 let tasks = [];
 let editingId = null;
+let currentDetailId = null;
+
+function getId(obj){
+  if(!obj) return null;
+  if(obj._id) return String(obj._id);
+  if(obj.id) return String(obj.id);
+  return null;
+}
 
 async function loadTasks(){
   try {
@@ -132,27 +140,37 @@ function renderTasks(){
         <button class="delete">✖</button>
       </div>
     `;
-    li.querySelector('.open').onclick = ()=> renderDetail(t._id);
-    li.querySelector('.edit').onclick = ()=> openModal(t._id);
-    li.querySelector('.delete').onclick = async ()=> { 
-      if(confirm('Supprimer cette tâche ?')){ 
-        try {
-          await deleteTaskAPI(t._id);
-          await loadTasks();
-          renderTasks(); 
-          renderDetail(); 
-        } catch (error) {
-          alert('Erreur lors de la suppression: ' + error.message);
+      const tid = getId(t);
+      li.querySelector('.open').onclick = ()=> renderDetail(tid);
+      li.querySelector('.edit').onclick = ()=> openModal(tid);
+      li.querySelector('.delete').onclick = async ()=> { 
+        if(confirm('Supprimer cette tâche ?')){ 
+          try {
+            await deleteTaskAPI(tid);
+            await loadTasks();
+            renderTasks(); 
+            if(currentDetailId && currentDetailId === tid){
+              renderDetail();
+            } else if(currentDetailId){
+              renderDetail(currentDetailId);
+            } else {
+              renderDetail();
+            }
+          } catch (error) {
+            alert('Erreur lors de la suppression: ' + error.message);
+          }
         }
-      }
-    };
+      };
     taskList.appendChild(li);
   });
 }
 
 function renderDetail(id){
-  if(!id){ taskDetail.innerHTML='<p class="empty">Sélectionnez une tâche pour voir les détails</p>'; return; }
-  const t = tasks.find(x=>x._id===id); if(!t) return;
+  if(!id){ currentDetailId = null; taskDetail.innerHTML='<p class="empty">Sélectionnez une tâche pour voir les détails</p>'; return; }
+  const sid = String(id);
+  const t = tasks.find(x=> getId(x)===sid );
+  if(!t){ currentDetailId = null; taskDetail.innerHTML='<p class="empty">Sélectionnez une tâche pour voir les détails</p>'; return; }
+  currentDetailId = sid;
   taskDetail.innerHTML = '';
   const h = document.createElement('div');
   h.innerHTML = `
@@ -176,7 +194,8 @@ function openModal(id=null){
   subtasksDiv.innerHTML=''; commentsDiv.innerHTML=''; newCommentInput.value='';
   if(id){
     modalTitle.textContent='Modifier la tâche';
-    const t = tasks.find(x=>x._id===id);
+    const t = tasks.find(x=> getId(x)===String(id));
+    if(!t){ modalTitle.textContent='Modifier la tâche'; deleteTaskBtn.style.display='inline-block'; return; }
     document.getElementById('titre').value = t.titre||'';
     document.getElementById('description').value = t.description||'';
     document.getElementById('categorie').value = t.categorie||'';
@@ -232,14 +251,21 @@ taskForm.onsubmit = async function(e){
     commentaires: Array.from(commentsDiv.querySelectorAll('.comment')).map(c=>({ auteur:'', date:'', contenu:c.querySelector('p')?c.querySelector('p').textContent:'' }))
   };
   try {
+    let savedId = null;
     if(editingId){
       await updateTaskAPI(editingId, data);
+      savedId = String(editingId);
     }else{
-      await createTaskAPI(data);
+      const newTask = await createTaskAPI(data);
+      savedId = getId(newTask);
     }
     await loadTasks();
     renderTasks(); 
     closeModal();
+    if(savedId){
+      const exists = tasks.find(x=> getId(x)===String(savedId));
+      if(exists) renderDetail(savedId); else renderDetail();
+    }
   } catch (error) {
     alert('Erreur: ' + error.message);
   }
@@ -249,11 +275,18 @@ deleteTaskBtn.onclick = async ()=>{
   if(!editingId) return; 
   if(!confirm('Supprimer définitivement ?')) return; 
   try {
-    await deleteTaskAPI(editingId);
+      const deletedId = String(editingId);
+      await deleteTaskAPI(deletedId);
     await loadTasks();
     renderTasks(); 
     closeModal(); 
-    renderDetail();
+      if(currentDetailId && currentDetailId === deletedId){
+        renderDetail();
+      } else if(currentDetailId){
+        renderDetail(currentDetailId);
+      } else {
+        renderDetail();
+      }
   } catch (error) {
     alert('Erreur lors de la suppression: ' + error.message);
   }

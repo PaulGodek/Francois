@@ -3,67 +3,64 @@ import Task from '../models/Task.js';
 // ---------------- CRUD Operations ----------------
 
 export const getTasks = async (req, res) => {
-  const { query } = req.query;
+  const { statut, priorite, categorie, etiquette, avant, apres, q, tri, order } = req.query;
   
-  let match;
+  let match = {};
 
-  if (typeof query.statut !== undefined) {
-    match = { statut: query.statut };
+  if (statut !== undefined) {
+    match = { statut };
   } 
-  else if (typeof query.priorite !== undefined) {
-    match = { priorite: query.priorite };
+  else if (priorite !== undefined) {
+    match = { priorite };
   } 
-  else if (typeof query.categorie !== undefined) {
-    match = { categorie: query.categorie };
+  else if (categorie !== undefined) {
+    match = { categorie };
   } 
-  else if (typeof query.etiquette !== undefined) {
-    match = { etiquettes: query.etiquette };
+  else if (etiquette !== undefined) {
+    match = { etiquettes: etiquette };
   } 
-  else if (typeof query.avant !== undefined) {
-    const date = new Date(query.avant);
+  else if (avant !== undefined) {
+    const date = new Date(avant);
     match = { echeance: { $lt: date } };
   } 
-  else if (typeof query.apres !== undefined) {
-    const date = new Date(query.apres);
+  else if (apres !== undefined) {
+    const date = new Date(apres);
     match = { echeance: { $gt: date } };
   } 
-  else if (typeof query.q !== undefined) {
-    const searchTerm = query.q;
+  else if (q !== undefined) {
+    const searchTerm = q;
     match = {
       $or: [
-        { titre: { $regex: `/${searchTerm}/`, $options: 'i' } },
-        { description: { $regex: `/${searchTerm}/`, $options: 'i' } }
+        { titre: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: searchTerm, $options: 'i' } }
       ]
     };
-  } else {
-    match = {};
   }
 
-  let sort;
+  let pipeline = [{ $match: match }];
 
-  if (typeof query.tri !== undefined) {
-    let order = query.order === 'desc' ? -1 : 1;
-    switch (query.tri) {
+  if (tri !== undefined) {
+    let sortOrder = order === 'desc' ? -1 : 1;
+    switch (tri) {
       case 'echeance':
-        sort = { $sort: { echeance: order } };
+        pipeline.push({ $sort: { echeance: sortOrder } });
         break;
       case 'priorite':
-        sort = { $sort: { priorite: order } };
+        pipeline.push({ $sort: { priorite: sortOrder } });
         break;
       case 'dateCreation':
-        sort = { $sort: { dateCreation: order } };
+        pipeline.push({ $sort: { dateCreation: sortOrder } });
         break;
       default:
-        sort = {};
         break;
     }
   }
 
   try {
-    let tasks = await Task.aggregate({$match: match, $sort: sort});
+    let tasks = await Task.aggregate(pipeline);
     res.status(200).json(tasks);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 }
 
