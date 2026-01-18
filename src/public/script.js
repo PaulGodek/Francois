@@ -137,7 +137,7 @@ function renderTasks(){
     li.querySelector('.delete').onclick = async ()=> { 
       if(confirm('Supprimer cette tâche ?')){ 
         try {
-          await deleteTaskAPI(t.id);
+          await deleteTaskAPI(t._id);
           await loadTasks();
           renderTasks(); 
           renderDetail(); 
