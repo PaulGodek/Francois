@@ -118,11 +118,13 @@ function renderTasks(){
   if(tasks.length===0){ taskList.innerHTML='<p>Aucune tâche</p>'; return; }
   tasks.forEach(t=>{
     const li = document.createElement('li'); li.className='task-card';
+    const etiquettesHTML = (t.etiquettes||[]).map(e => `<span class="badge">${escapeHtml(e)}</span>`).join('');
     li.innerHTML = `
       <div>
         <h3>${escapeHtml(t.titre)}</h3>
         <div class="task-meta">${escapeHtml(t.categorie||'')} • ${escapeHtml(t.statut)} • <strong>${escapeHtml(t.priorite)}</strong></div>
         <div class="task-meta">Échéance: ${escapeHtml(t.echeance||'—')}</div>
+        ${etiquettesHTML ? `<div style="margin-top: 8px;">${etiquettesHTML}</div>` : ''}
       </div>
       <div class="task-actions">
         <button class="open">🔍</button>
@@ -167,9 +169,11 @@ function renderDetail(id){
   currentDetailId = sid;
   taskDetail.innerHTML = '';
   const h = document.createElement('div');
+  const etiquettesHTML = (t.etiquettes||[]).map(e => `<span class="badge">${escapeHtml(e)}</span>`).join('');
   h.innerHTML = `
     <h2>${escapeHtml(t.titre)}</h2>
     <div class="task-meta">${escapeHtml(t.categorie||'')} • ${escapeHtml(t.statut)} • Priorité: ${escapeHtml(t.priorite)}</div>
+    ${etiquettesHTML ? `<div style="margin-top: 8px; margin-bottom: 12px;">${etiquettesHTML}</div>` : ''}
     <p>${escapeHtml(t.description||'')}</p>
     <h4>Sous-tâches</h4>
   `;
