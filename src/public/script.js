@@ -37,21 +37,10 @@ let editingId = null;
 let currentDetailId = null;
 
 // Variables de tri
-let nomTri = "";
-let valeurTri = "";
+let tri = "";
 let orderAscendant = true;
 // filtres de la forme { statut = "à faire", priorite = "basse" }
 let filtres = {};
-
-function changeTri(newNomTri, newValeurTri) {
-  nomTri = newNomTri;
-  valeurTri = newValeurTri
-}
-
-function suppressTri() {
-  nomTri = "";
-  valeurTri = ""
-}
 
 function getId(obj){
   if(!obj) return null;
@@ -65,8 +54,8 @@ async function loadTasksAPI(){
     let url = "/api/tasks";
     let mediaQuery = "?";
 
-    if (nomTri !== "") {
-      mediaQuery += `${nomTri}=${valeurTri}&order=${orderAscendant?"asc":"desc"}&`;
+    if (tri !== "") {
+      mediaQuery += `tri=${tri}&order=${orderAscendant?"asc":"desc"}&`;
     }
 
     for (const [key, value] of Object.entries(filtres)) {
@@ -292,8 +281,7 @@ deleteTaskBtn.onclick = async ()=>{
 [searchInput, filterStatut, filterPriorite, filterCategorie, filterEtiquette, filterAvant, filterApres, sortBy, sortOrder].forEach(el => {
   el.addEventListener('input', () => {
     // Update sorting variables
-    nomTri = sortBy.value || '';
-    valeurTri = sortBy.value ? sortBy.options[sortBy.selectedIndex].text : '';
+    tri = sortBy.value || '';
     orderAscendant = sortOrder.value === 'asc';
 
     // Update filters object
@@ -330,8 +318,7 @@ clearFilters.onclick = ()=>{
   sortOrder.value='asc'; 
   searchInput.value=''; 
 
-  nomTri = "";
-  valeurTri = "";
+  tri = "";
   orderAscendant = true;
   filtres = {};
 
